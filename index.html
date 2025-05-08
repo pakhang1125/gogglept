@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ChatGPT Search</title>
+  <style>
+    body { background-color: #202124; color: #e8eaed; font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    .search-container { padding: 30px; text-align: center; }
+    input[type="text"] { width: 60%; padding: 12px; font-size: 16px; border: none; border-radius: 4px; }
+    button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 4px; background-color: #4285f4; color: white; cursor: pointer; }
+    .results { padding: 20px; max-width: 800px; margin: auto; }
+    .result { margin-bottom: 20px; }
+    .result a { color: #8ab4f8; font-size: 18px; text-decoration: none; }
+    .result a:hover { text-decoration: underline; }
+    .description { color: #bdc1c6; font-size: 14px; }
+    .full-answer { margin-top: 40px; border-top: 1px solid #3c4043; padding-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="search-container">
+    <input type="text" id="query" placeholder="Search with ChatGPT...">
+    <button onclick="search()">Search</button>
+  </div>
+  <div class="results" id="results"></div>
+  <div class="results full-answer" id="full-answer"></div>
+
+  <script>
+    async function search() {
+      const query = document.getElementById('query').value;
+      const apiKey = 'YOUR_OPENAI_API_KEY'; // Insert your OpenAI API Key
+      const endpoint = 'https://api.openai.com/v1/chat/completions';
+      
+      const resultsDiv = document.getElementById('results');
+      const answerDiv = document.getElementById('full-answer');
+      resultsDiv.innerHTML = '<p>Loading results...</p>';
+      answerDiv.innerHTML = '';
+
+      const prompt = `Please return 5 search result entries for the query "${query}". Each entry should include:\n1. Title\n2. URL\n3. Description\nFormat it like:\n1. [Title](URL) - Description\nAlso, at the end, include a detailed answer under "Full Answer:"`;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': \`Bearer ${apiKey}\`
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.7
+        })
+      });
+
+      const data = await response.json();
+      const content = data.choices[0].message.content;
+
+      const parts = content.split("Full Answer:");
+
+      const resultsText = parts[0].trim();
+      const fullAnswerText = parts[1] ? parts[1].trim() : '';
+
+      const lines = resultsText.split('\n').filter(line => line.trim() !== '');
+      resultsDiv.innerHTML = '';
+      lines.forEach(line => {
+        const match = line.match(/^\d+\.\s*\[(.*?)\]\((.*?)\)\s*-\s*(.*)$/);
+        if (match) {
+          const [_, title, url, description] = match;
+          resultsDiv.innerHTML += \`
+            <div class="result">
+              <a href="\${url}" target="_blank">\${title}</a>
+              <div class="description">\${description}</div>
+            </div>\`;
+        }
+      });
+
+      if (fullAnswerText) {
+        answerDiv.innerHTML = \`<h2>Full Answer</h2><p>\${fullAnswerText.replace(/\\n/g, "<br>")}</p>\`;
+      }
+    }
+  </script>
+</body>
+</html>
