@@ -28,29 +28,14 @@
     async function search() {
       const query = document.getElementById('query').value;
       const apiKey = 'YOUR_OPENAI_API_KEY'; // Insert your OpenAI API Key
-      const endpoint = 'https://api.openai.com/v1/chat/completions';
-      
-      const resultsDiv = document.getElementById('results');
-      const answerDiv = document.getElementById('full-answer');
-      resultsDiv.innerHTML = '<p>Loading results...</p>';
-      answerDiv.innerHTML = '';
-
-      const prompt = `Please return 5 search result entries for the query "${query}". Each entry should include:\n1. Title\n2. URL\n3. Description\nFormat it like:\n1. [Title](URL) - Description\nAlso, at the end, include a detailed answer under "Full Answer:"`;
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': \`Bearer ${apiKey}\`
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.7
-        })
-      });
-
-      const data = await response.json();
+  // replace direct OpenAI call with your Netlify proxy:
+const response = await fetch('/.netlify/functions/chat', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ prompt })
+})
+const data = await response.json()
+// … rendering code stays the same …
       const content = data.choices[0].message.content;
 
       const parts = content.split("Full Answer:");
